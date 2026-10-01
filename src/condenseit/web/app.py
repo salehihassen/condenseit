@@ -105,6 +105,26 @@ def _clean_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [_normalize_item(it) for it in items]
 
 
+def _attach_hn_links(
+    store: ContentStore, items: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Add link metadata to saved digests created before HN stored both URLs."""
+    for item in items:
+        if not str(item.get("source") or "").startswith("Hacker News"):
+            continue
+        url = str(item.get("url") or "")
+        article = store.get_article(url) if url else None
+        if article:
+            for field in ("discussion_url", "original_url"):
+                if not item.get(field) and article.get(field):
+                    item[field] = article[field]
+        if url.startswith("https://news.ycombinator.com/item?id="):
+            item.setdefault("discussion_url", url)
+        elif url:
+            item.setdefault("original_url", url)
+    return items
+
+
 def create_app(config_path: str | None = None) -> FastAPI:
     # Ensure condenseit.* loggers are visible at INFO when started via uvicorn
     # directly (e.g. systemd). The CLI calls basicConfig(INFO) itself; this is
@@ -1169,6 +1189,7 @@ def _build_digest_detail(
     meta["id"] = row.get("id")
     cleaned = _clean_items(items)
     if store is not None:
+        cleaned = _attach_hn_links(store, cleaned)
         cleaned = _attach_ratings(store, cleaned)
     return {
         "meta": meta,
@@ -1208,6 +1229,7 @@ def _load_digest(
     digest_items: list[dict[str, Any]] = (
         raw_items if isinstance(raw_items, list) else []
     )
+    digest_items = _attach_hn_links(store, digest_items)
     meta["created_at"] = row.get("created_at", "")
     meta["id"] = row.get("id")
     return row, html, meta, digest_items
