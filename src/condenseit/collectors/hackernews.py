@@ -6,6 +6,7 @@ fetching only the item detail pages we intend to use.
 
 import logging
 from datetime import UTC, datetime
+from html.parser import HTMLParser
 from typing import Any
 
 import httpx
@@ -22,6 +23,29 @@ logger = logging.getLogger(__name__)
 _HN_BASE = "https://hacker-news.firebaseio.com/v0"
 _HN_ITEM_URL = "https://news.ycombinator.com/item?id={id}"
 _VALID_FEEDS = frozenset({"top", "best", "new", "ask", "show"})
+_ARTICLE_CHARS = 1800
+_COMMENT_CHARS = 260
+_MAX_COMMENTS = 6
+_MAX_COMMENT_IDS = 12
+
+
+class _CommentText(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in {"p", "br", "li"}:
+            self.parts.append(" ")
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
+def _plain_text(markup: str) -> str:
+    parser = _CommentText()
+    parser.feed(markup)
+    return " ".join("".join(parser.parts).split())
 
 
 class HackerNewsCollector:
@@ -94,16 +118,32 @@ class HackerNewsCollector:
                 continue
 
             if url:
-                content = self._extract_content(url)
+                article = self._extract_content(url) or ""
             else:
-                # Self/Ask post - use the text body if available.
-                content = item.get("text") or title
+                # Self/Ask post - use its text before the discussion.
+                article = _plain_text(item.get("text") or "") or title
 
-            if not content.strip():
+            comments = self._fetch_comments(item)
+            if not article.strip() and not comments:
                 continue
 
             published = self._ts_to_iso(item.get("time"))
             hn_link = _HN_ITEM_URL.format(id=story_id)
+            sections = [
+                "Hacker News story. Summarize the article and discussion; "
+                "distinguish article claims from commenter opinions."
+            ]
+            if url:
+                sections.append(f"Original article: {url}")
+            if article:
+                sections.append(f"Article or post excerpt:\n{article[:_ARTICLE_CHARS]}")
+            if comments:
+                total = item.get("descendants") or len(comments)
+                sections.append(
+                    f"Hacker News comments (sample of {len(comments)} from "
+                    f"{total} comments):\n" + "\n".join(comments)
+                )
+            content = "\n\n".join(sections)[:4000]
             items.append(
                 {
                     "url": url or hn_link,
@@ -125,6 +165,25 @@ class HackerNewsCollector:
 
     def _extract_content(self, url: str) -> str:
         return fetch_article_text(self._client, url) or ""
+
+    def _fetch_comments(self, story: dict[str, Any]) -> list[str]:
+        comments: list[str] = []
+        for comment_id in (story.get("kids") or [])[:_MAX_COMMENT_IDS]:
+            if len(comments) >= _MAX_COMMENTS:
+                break
+            try:
+                comment = self._fetch_item(comment_id)
+            except Exception:
+                logger.debug(
+                    "HN comment fetch failed for %s", comment_id, exc_info=True
+                )
+                continue
+            if not comment or comment.get("deleted") or comment.get("dead"):
+                continue
+            body = _plain_text(comment.get("text") or "")[:_COMMENT_CHARS]
+            if body:
+                comments.append(f"- {comment.get('by') or 'anonymous'}: {body}")
+        return comments
 
     @staticmethod
     def _ts_to_iso(ts: Any) -> str:
