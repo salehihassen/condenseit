@@ -184,9 +184,16 @@ class YouTubeCollector:
             if not transcript and self._whisper_enabled:
                 transcript = self._transcribe_via_whisper(vid)
             description = self._entry_plain_text(entry)
-            body = (transcript or description).strip()
+            body = (
+                transcript
+                or (description if self._description_has_substance(description) else "")
+            ).strip()
             if not body:
-                logger.debug("No transcript or RSS description for %s", vid)
+                logger.warning(
+                    "Skipping YouTube video %s: no transcript or substantive "
+                    "RSS description",
+                    vid,
+                )
                 continue
             if not transcript:
                 logger.info(
@@ -225,6 +232,13 @@ class YouTubeCollector:
             },
             pk="video_id",
         )
+
+    @staticmethod
+    def _description_has_substance(description: str) -> bool:
+        """Reject RSS descriptions that are just profile, sponsor, or other links."""
+        without_urls = re.sub(r"https?://\S+", " ", description)
+        words = re.findall(r"[A-Za-z][A-Za-z'-]*", without_urls)
+        return len(words) >= 12
 
     @staticmethod
     def _fetch_transcript(video_id: str) -> str:
