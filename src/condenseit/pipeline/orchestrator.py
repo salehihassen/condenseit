@@ -461,6 +461,8 @@ class DigestPipeline:
                 entry = {
                     "title": art["title"],
                     "url": art["url"],
+                    "discussion_url": art.get("discussion_url") or "",
+                    "original_url": art.get("original_url") or "",
                     "summary": result["summary"],
                     "tldr": result["tldr"],
                     "key_takeaways": result["key_takeaways"],
@@ -923,6 +925,8 @@ class DigestPipeline:
                     "id": i,
                     "title": str(art.get("title", "")),
                     "url": u,
+                    "discussion_url": str(art.get("discussion_url") or ""),
+                    "original_url": str(art.get("original_url") or ""),
                     "summary": "",
                     "tldr": "",
                     "key_takeaways": [],
