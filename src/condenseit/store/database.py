@@ -74,6 +74,10 @@ class ContentStore:
         }
         if "image_url" not in articles_cols:
             self.db.execute("ALTER TABLE articles ADD COLUMN image_url TEXT")
+        if "discussion_url" not in articles_cols:
+            self.db.execute("ALTER TABLE articles ADD COLUMN discussion_url TEXT")
+        if "original_url" not in articles_cols:
+            self.db.execute("ALTER TABLE articles ADD COLUMN original_url TEXT")
         if "digests" not in self.db.table_names():
             self.db["digests"].create(
                 {
@@ -318,6 +322,10 @@ class ContentStore:
         # Preserve a newly-extracted image_url when the article re-appears.
         if incoming.get("image_url"):
             row["image_url"] = incoming["image_url"]
+        if incoming.get("discussion_url"):
+            row["discussion_url"] = incoming["discussion_url"]
+        if incoming.get("original_url"):
+            row["original_url"] = incoming["original_url"]
         self.save_article(row)
 
     def articles_collected_since(self, cutoff: datetime) -> list[dict[str, Any]]:

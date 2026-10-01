@@ -133,6 +133,14 @@ export function ItemDetailPanel({
     ? tryParseStructuredSummary(item.summary)
     : null;
   const tldr = item.tldr ?? jsonFallback?.tldr;
+  const discussionUrl = item.discussion_url || (
+    /^https:\/\/news\.ycombinator\.com\/item\?id=\d+$/.test(item.url)
+      ? item.url
+      : ''
+  );
+  const originalUrl = item.original_url || (
+    discussionUrl === item.url ? '' : item.url
+  );
   const keyTakeaways =
     item.key_takeaways?.length
       ? item.key_takeaways
@@ -229,27 +237,28 @@ export function ItemDetailPanel({
             Back
           </button>
 
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-1.5 text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
-          >
-            Open original
-            <svg
-              class="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2.5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
-              />
-            </svg>
-          </a>
+          <div class="flex items-center gap-3 text-sm font-medium">
+            {originalUrl && (
+              <a
+                href={originalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
+              >
+                Open original ↗
+              </a>
+            )}
+            {discussionUrl && (
+              <a
+                href={discussionUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
+              >
+                HN comments ↗
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Hero image (if available) */}

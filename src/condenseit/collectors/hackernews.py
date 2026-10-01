@@ -107,6 +107,8 @@ class HackerNewsCollector:
             items.append(
                 {
                     "url": url or hn_link,
+                    "discussion_url": hn_link,
+                    "original_url": url,
                     "title": title,
                     "content": content,
                     "source": f"Hacker News ({feed})",

@@ -28,6 +28,10 @@ export interface ScoreBreakdown {
 
 export interface DigestItem {
   url: string;
+  /** Hacker News discussion page, when this item came from HN. */
+  discussion_url?: string;
+  /** External article linked from the HN discussion, when available. */
+  original_url?: string;
   title: string;
   summary: string;
   /** One-sentence summary produced by the LLM structured output. */

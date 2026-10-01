@@ -262,7 +262,7 @@ export function DigestCard({
              * source URL directly in a new tab.
              */}
             <a
-              href={item.url}
+              href={item.discussion_url || item.url}
               target="_blank"
               rel="noopener noreferrer"
               onClick={
