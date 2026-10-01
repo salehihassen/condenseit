@@ -184,9 +184,15 @@ class YouTubeCollector:
             if not transcript and self._whisper_enabled:
                 transcript = self._transcribe_via_whisper(vid)
             description = self._entry_plain_text(entry)
-            body = (transcript or description).strip()
+            body = (
+                transcript
+                or (description if self._description_has_substance(description) else "")
+            ).strip()
             if not body:
-                logger.debug("No transcript or RSS description for %s", vid)
+                logger.warning(
+                    "Skipping YouTube video %s: no transcript or substantive RSS description",
+                    vid,
+                )
                 continue
             if not transcript:
                 logger.info(
@@ -229,12 +235,24 @@ class YouTubeCollector:
     @staticmethod
     def _fetch_transcript(video_id: str) -> str:
         try:
-            chunks = YouTubeTranscriptApi.get_transcript(video_id)
-            joined = " ".join(c["text"] for c in chunks)
+            chunks = YouTubeTranscriptApi().fetch(video_id)
+            joined = " ".join(chunk.text for chunk in chunks)
             return joined[:_MAX_BODY_CHARS]
-        except Exception:
-            logger.debug("No transcript for %s", video_id, exc_info=True)
+        except Exception as exc:
+            logger.warning(
+                "YouTube transcript unavailable for %s (%s): %s",
+                video_id,
+                type(exc).__name__,
+                exc,
+            )
             return ""
+
+    @staticmethod
+    def _description_has_substance(description: str) -> bool:
+        """Reject RSS descriptions that are just profile, sponsor, or other links."""
+        without_urls = re.sub(r"https?://\S+", " ", description)
+        words = re.findall(r"[A-Za-z][A-Za-z'-]*", without_urls)
+        return len(words) >= 12
 
     def _transcribe_via_whisper(self, video_id: str) -> str:
         """Download audio with yt-dlp and transcribe via OpenRouter Whisper API."""
