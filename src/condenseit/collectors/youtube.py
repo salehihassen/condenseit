@@ -229,11 +229,16 @@ class YouTubeCollector:
     @staticmethod
     def _fetch_transcript(video_id: str) -> str:
         try:
-            chunks = YouTubeTranscriptApi.get_transcript(video_id)
-            joined = " ".join(c["text"] for c in chunks)
+            chunks = YouTubeTranscriptApi().fetch(video_id)
+            joined = " ".join(chunk.text for chunk in chunks)
             return joined[:_MAX_BODY_CHARS]
-        except Exception:
-            logger.debug("No transcript for %s", video_id, exc_info=True)
+        except Exception as exc:
+            logger.warning(
+                "YouTube transcript unavailable for %s (%s): %s",
+                video_id,
+                type(exc).__name__,
+                exc,
+            )
             return ""
 
     def _transcribe_via_whisper(self, video_id: str) -> str:

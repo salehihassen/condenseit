@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from condenseit.collectors.youtube import YouTubeCollector
 
 
@@ -29,3 +31,13 @@ def test_entry_plain_text_falls_back_to_content_list() -> None:
 
 def test_entry_plain_text_empty() -> None:
     assert YouTubeCollector._entry_plain_text({}) == ""
+
+
+def test_fetch_transcript_uses_current_api() -> None:
+    class Snippet:
+        text = "A real transcript sentence."
+
+    with patch("condenseit.collectors.youtube.YouTubeTranscriptApi") as api:
+        api.return_value.fetch.return_value = [Snippet()]
+        assert YouTubeCollector._fetch_transcript("MdkyCt6SygQ") == Snippet.text
+        api.return_value.fetch.assert_called_once_with("MdkyCt6SygQ")
