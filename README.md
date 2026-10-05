@@ -93,7 +93,7 @@ here?" breakdown so you can see exactly what drove its position.
 ### Quick start
 
 ```bash
-git clone https://github.com/wildlifechorus/condenseit
+git clone --branch saleh-changes https://github.com/salehihassen/condenseit
 cd condenseit
 
 # Install dependencies
@@ -140,20 +140,21 @@ Run the web UI from a published image (no local Node.js or Python build).
 Digest runs and Ollama stay on the host.
 
 ```bash
-git clone https://github.com/wildlifechorus/condenseit
+git clone --branch saleh-changes https://github.com/salehihassen/condenseit
 cd condenseit
 cp config.example.yaml config.yaml
 cp .env.example .env
 docker compose pull
-docker compose up -d
+docker compose up -d --no-build
 # Open http://localhost:8899
 ```
 
-Images are published on each release to
-[GHCR](https://ghcr.io/wildlifechorus/condenseit) and
-[Docker Hub](https://hub.docker.com/r/wildlifechorus/condenseit). See
-[docs/docker-image.md](docs/docker-image.md) for version pins, registry
-overrides, and maintainer setup.
+This fork publishes AMD64 and ARM64 images to
+`ghcr.io/salehihassen/condenseit:saleh-changes` on each push to `saleh-changes`.
+GitHub Actions builds and pushes with its built-in token; the host only needs
+a GHCR token with `read:packages` for private images. See
+[docs/docker-image.md](docs/docker-image.md) for login, image pins, and workflow
+setup.
 
 ---
 
