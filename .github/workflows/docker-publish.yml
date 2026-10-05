@@ -1,28 +1,19 @@
 name: Publish Docker image
 
 on:
+  push:
+    branches: [saleh-changes]
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Release tag to build (for example v2.7.5)
-        required: true
-        type: string
-      push_latest:
-        description: Also tag and push latest
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
   packages: write
 
-env:
-  REGISTRY_GHCR: ghcr.io
-  REGISTRY_DOCKERHUB: docker.io
-  IMAGE_NAME: wildlifechorus/condenseit
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
   publish:
@@ -30,8 +21,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
+
+      - name: Image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -42,27 +35,22 @@ jobs:
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY_GHCR }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}
-            ${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}
+          images: ${{ steps.image.outputs.name }}
+          flavor: latest=false
           tags: |
-            type=semver,pattern={{version}},value=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
-            type=raw,value=latest,enable=${{ (github.event_name == 'release' && !github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && inputs.push_latest) }}
+            type=ref,event=branch
+            type=sha,format=long
+            type=semver,pattern={{version}},value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
 
       - name: Build and push
         uses: docker/build-push-action@v6

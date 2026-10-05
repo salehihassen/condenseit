@@ -1,128 +1,90 @@
 # Pre-built Docker image
 
-CondenseIt publishes a **web UI only** image on each GitHub release. The
-container serves the digest reader and admin panel on port **8899**. Digest
-runs and Ollama stay on the host (same as the local Docker setup in
-[deploy-local.md](deploy-local.md)).
+This fork builds the Python backend and Preact frontend in GitHub Actions and
+publishes them to `ghcr.io/salehihassen/condenseit`. The container serves the web
+UI on port **8899**. Digest runs and Ollama stay on the host, as described in
+[deploy-local.md](deploy-local.md).
 
-## Quick start (pull image)
+## Build and publish in GitHub Actions
 
-No Node.js or Python build is required on the host for the UI.
+The [publish workflow](../.github/workflows/docker-publish.yml) runs on every
+push to `saleh-changes`, on published releases, and on manual dispatch. The
+image namespace comes from the workflow repository, so a fork publishes under
+its own owner rather than the upstream owner.
+
+Each branch build publishes:
+
+- `ghcr.io/salehihassen/condenseit:saleh-changes` for this branch.
+- `ghcr.io/salehihassen/condenseit:sha-<full-commit-sha>` for a specific commit.
+
+Both `linux/amd64` and `linux/arm64` are built. Stable releases tagged `vX.Y.Z`
+also publish `X.Y.Z`, `X.Y`, and `latest`; prereleases publish version tags
+without moving `latest`.
+
+The workflow logs into GHCR with its built-in `GITHUB_TOKEN` and
+`packages: write`. No PAT or Docker Hub secrets are required in GitHub Actions.
+Your machine only needs permission to pull images.
+
+Before the first push, open the fork's **Actions** tab and enable workflows if
+GitHub has disabled them for the fork. Then commit and push these changes:
 
 ```bash
-git clone https://github.com/wildlifechorus/condenseit
-cd condenseit
-cp config.example.yaml config.yaml
-cp .env.example .env
-# Edit config.yaml and .env as needed.
+git add .github/workflows/docker-publish.yml docker-compose.yml README.md docs/docker-image.md
+git commit -m "Publish fork branch images to GHCR"
+git push origin saleh-changes
+```
+
+Watch **Publish Docker image** finish before pulling. For
+later manual builds, choose **Run workflow** and select the desired branch;
+GitHub requires the workflow file to exist on the default branch before it
+offers manual dispatch. A push to `saleh-changes` does not need that setup.
+
+If a package with this name already exists from a previous manual push, grant
+the fork write access under the package's **Settings → Manage Actions access**.
+Packages created by this workflow are linked to the fork automatically.
+
+## Pull and run with a read-only PAT
+
+For a private image, use your existing GitHub personal access token **(classic)**
+with `read:packages` and an account that can read the package. Keep the package
+private if you want authenticated pulls. Public images support anonymous pulls.
+
+```bash
+# Skip this if Docker is already logged into GHCR with your read-only PAT.
+# Paste the PAT at the password prompt.
+docker login ghcr.io -u salehihassen
 
 docker compose pull
-docker compose up -d
+docker compose up -d --no-build
 ```
 
-Open [http://localhost:8899](http://localhost:8899).
+Compose defaults to `ghcr.io/salehihassen/condenseit:saleh-changes`. Each time
+you push code and the workflow finishes, repeat the two Compose commands to
+update the running UI. `--no-build` keeps image builds in GitHub Actions.
 
-Run a digest on the host (uses Metal GPU when Ollama is local):
+For a fresh checkout, first copy `config.example.yaml` to `config.yaml` and
+`.env.example` to `.env`, and edit those files for your environment. Compose
+mounts `config.yaml` and `./data/` from the host.
+
+Open [http://localhost:8899](http://localhost:8899). Stop with
+`docker compose down`.
+
+## Pin or override the image
+
+[`docker-compose.yml`](../docker-compose.yml) accepts these environment
+variables, which can also be saved in `.env`:
 
 ```bash
-./scripts/run-with-ollama.sh
-# or: condenseit run   (requires a native install for the CLI)
+# Pin one workflow build; replace <full-commit-sha> with the actual commit.
+export CONDENSEIT_IMAGE_TAG='sha-<full-commit-sha>'
+
+# Or override the complete registry/name/tag, including upstream images.
+export CONDENSEIT_IMAGE=ghcr.io/wildlifechorus/condenseit:2.7.5
 ```
 
-Stop the container:
+`CONDENSEIT_IMAGE` takes precedence over `CONDENSEIT_IMAGE_TAG`. Remove an old
+override to use this fork's default branch image. Local builds remain available
+with `docker compose up -d --build` when explicitly requested.
 
-```bash
-docker compose down
-```
-
-## Image registries
-
-Both registries receive the same tags on each release (`2.7.5`, `2.7`,
-`latest` for stable releases):
-
-| Registry | Image |
-|----------|-------|
-| GitHub Container Registry | `ghcr.io/wildlifechorus/condenseit` |
-| Docker Hub | `docker.io/wildlifechorus/condenseit` |
-
-Pull a specific version:
-
-```bash
-docker pull ghcr.io/wildlifechorus/condenseit:2.7.5
-docker pull docker.io/wildlifechorus/condenseit:2.7.5
-```
-
-## Compose environment variables
-
-[`docker-compose.yml`](../docker-compose.yml) defaults to GHCR `latest`:
-
-```yaml
-image: ${CONDENSEIT_IMAGE:-ghcr.io/wildlifechorus/condenseit:${CONDENSEIT_IMAGE_TAG:-latest}}
-```
-
-Examples:
-
-```bash
-# Pin a version on GHCR (default registry)
-export CONDENSEIT_IMAGE_TAG=2.7.5
-docker compose pull && docker compose up -d
-
-# Use Docker Hub instead
-export CONDENSEIT_IMAGE=docker.io/wildlifechorus/condenseit:latest
-docker compose pull && docker compose up -d
-```
-
-When both `image` and `build` are set, `docker compose up --build` still
-builds locally and tags the result with the configured image name (useful for
-contributors).
-
-## What the image includes
-
-- Python backend and built Preact frontend (multi-stage
-  [`Dockerfile`](../Dockerfile))
-- System deps: `ffmpeg`, `libxml2`, `libxslt1.1`
-
-You still mount from the host:
-
-- `config.yaml`, feeds, LLM provider, schedule
-- `./data/`, SQLite database and rendered digests
-
-## Maintainer setup (one-time)
-
-Before the first publish, complete these steps in the GitHub repo and
-registries.
-
-### 1. Docker Hub
-
-1. Create the repository `wildlifechorus/condenseit` on Docker Hub (if it does
-   not exist).
-2. Create a Docker Hub **access token** (Account Settings → Security).
-3. Add GitHub repository secrets:
-   - `DOCKERHUB_USERNAME`, your Docker Hub username
-   - `DOCKERHUB_TOKEN`, the access token (not your account password)
-
-### 2. GitHub Container Registry
-
-GHCR login uses the workflow `GITHUB_TOKEN` (`packages: write` permission).
-No extra secret is required.
-
-After the **first successful workflow run**:
-
-1. Open the repo on GitHub → **Packages**.
-2. Select the `condenseit` container package.
-3. **Package settings** → change visibility to **Public** so anonymous
-   `docker pull` works.
-
-### 3. Publish workflow
-
-Images are built by
-[`.github/workflows/docker-publish.yml`](../.github/workflows/docker-publish.yml):
-
-- **Automatic:** runs when a GitHub **release is published** (tag `vX.Y.Z`).
-- **Manual backfill:** Actions → *Publish Docker image* → *Run workflow* with
-  tag `vX.Y.Z` and optional `push_latest`.
-
-Platforms: `linux/amd64`, `linux/arm64`.
-
-Tags per stable release: `X.Y.Z`, `X.Y`, and `latest`. Prereleases get version
-tags only (no `latest`).
+See [GitHub's Container registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+for token scopes and package access settings.
