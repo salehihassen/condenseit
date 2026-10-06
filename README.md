@@ -149,8 +149,8 @@ docker compose up -d --no-build
 # Open http://localhost:8899
 ```
 
-This fork publishes AMD64 and ARM64 images to
-`ghcr.io/salehihassen/condenseit:saleh-changes` on each push to `saleh-changes`.
+This fork publishes an AMD64 image to `ghcr.io/salehihassen/condenseit:latest`
+(plus an immutable `sha-<short-commit-sha>` tag) on each push to `saleh-changes`.
 GitHub Actions builds and pushes with its built-in token; the host only needs
 a GHCR token with `read:packages` for private images. See
 [docs/docker-image.md](docs/docker-image.md) for login, image pins, and workflow
