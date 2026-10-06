@@ -12,14 +12,14 @@ push to `saleh-changes`, on published releases, and on manual dispatch. The
 image namespace comes from the workflow repository, so a fork publishes under
 its own owner rather than the upstream owner.
 
-Each branch build publishes:
+Each push to `saleh-changes` publishes:
 
-- `ghcr.io/salehihassen/condenseit:saleh-changes` for this branch.
-- `ghcr.io/salehihassen/condenseit:sha-<full-commit-sha>` for a specific commit.
+- `ghcr.io/salehihassen/condenseit:latest`, the head of `saleh-changes`.
+- `ghcr.io/salehihassen/condenseit:sha-<short-commit-sha>`, an immutable tag for
+  that commit; pin it to hold a version or roll back.
 
-Both `linux/amd64` and `linux/arm64` are built. Stable releases tagged `vX.Y.Z`
-also publish `X.Y.Z`, `X.Y`, and `latest`; prereleases publish version tags
-without moving `latest`.
+Only `linux/amd64` is built. Releases tagged `vX.Y.Z` also publish `X.Y.Z`
+and `X.Y` but never move `latest`.
 
 The workflow logs into GHCR with its built-in `GITHUB_TOKEN` and
 `packages: write`. No PAT or Docker Hub secrets are required in GitHub Actions.
@@ -58,7 +58,7 @@ docker compose pull
 docker compose up -d --no-build
 ```
 
-Compose defaults to `ghcr.io/salehihassen/condenseit:saleh-changes`. Each time
+Compose defaults to `ghcr.io/salehihassen/condenseit:latest`. Each time
 you push code and the workflow finishes, repeat the two Compose commands to
 update the running UI. `--no-build` keeps image builds in GitHub Actions.
 
@@ -75,15 +75,15 @@ Open [http://localhost:8899](http://localhost:8899). Stop with
 variables, which can also be saved in `.env`:
 
 ```bash
-# Pin one workflow build; replace <full-commit-sha> with the actual commit.
-export CONDENSEIT_IMAGE_TAG='sha-<full-commit-sha>'
+# Pin one workflow build; replace <short-commit-sha> with the actual commit.
+export CONDENSEIT_IMAGE_TAG='sha-<short-commit-sha>'
 
 # Or override the complete registry/name/tag, including upstream images.
 export CONDENSEIT_IMAGE=ghcr.io/wildlifechorus/condenseit:2.7.5
 ```
 
 `CONDENSEIT_IMAGE` takes precedence over `CONDENSEIT_IMAGE_TAG`. Remove an old
-override to use this fork's default branch image. Local builds remain available
+override to use this fork's `latest` image. Local builds remain available
 with `docker compose up -d --build` when explicitly requested.
 
 See [GitHub's Container registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)

@@ -46,18 +46,20 @@ jobs:
           images: ${{ steps.image.outputs.name }}
           flavor: latest=false
           tags: |
-            type=ref,event=branch
-            type=sha,format=long
+            # Head of the fork's deploy branch.
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/saleh-changes' }}
+            # Immutable per-commit tag: what is deployed, and what to roll back to.
+            type=sha,format=short,prefix=sha-
+            # Releases keep their version tags but never move latest.
             type=semver,pattern={{version}},value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' }}
             type=semver,pattern={{major}}.{{minor}},value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' }}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
