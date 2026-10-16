@@ -60,6 +60,8 @@ jobs:
           context: .
           file: Dockerfile
           platforms: linux/amd64
+          build-args: |
+            CONDENSEIT_EXTRAS=telemetry
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
