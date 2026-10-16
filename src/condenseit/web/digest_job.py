@@ -75,6 +75,7 @@ class DigestJobManager:
         *,
         dry_run: bool = False,
         skip_deploy: bool = False,
+        execution_mode: str = "web",
     ) -> tuple[bool, str]:
         with self._lock:
             if self._snapshot.state == "running":
@@ -89,6 +90,7 @@ class DigestJobManager:
                 kwargs={
                     "dry_run": dry_run,
                     "skip_deploy": skip_deploy,
+                    "execution_mode": execution_mode,
                 },
                 name="condenseit-digest",
                 daemon=True,
@@ -101,6 +103,7 @@ class DigestJobManager:
         *,
         dry_run: bool,
         skip_deploy: bool,
+        execution_mode: str,
     ) -> None:
         handler = _ListHandler()
         root_logger = logging.getLogger("condenseit")
@@ -112,6 +115,7 @@ class DigestJobManager:
                 self._config_path,
                 dry_run=dry_run,
                 skip_deploy=skip_deploy,
+                execution_mode=execution_mode,
             )
             stats = result["stats"]
             articles = stats.get("articles_count", 0)

@@ -176,6 +176,10 @@ def create_app(config_path: str | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # Export freshness even if the scheduler never starts a digest.
+        from condenseit.telemetry import get_runtime
+
+        get_runtime()
         # Always start the scheduler task; the loop checks _is_scheduler_enabled()
         # on each iteration so it can be toggled live from the admin UI.
         _SCHEDULER_STATE["schedule_times"] = _get_schedule_times()

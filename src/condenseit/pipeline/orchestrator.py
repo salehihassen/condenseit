@@ -13,6 +13,7 @@ from typing import Any, Self
 import markdown
 import numpy as np
 
+from condenseit import telemetry
 from condenseit.collectors.github_releases import GitHubReleasesCollector
 from condenseit.collectors.google_news import GoogleNewsCollector
 from condenseit.collectors.hackernews import HackerNewsCollector
@@ -183,6 +184,7 @@ class DigestPipeline:
                 item_count=count,
             )
 
+    @telemetry.observed("digest.pipeline")
     def run(self, *, dry_run: bool = False) -> dict[str, Any]:
         start = time.time()
         logger.info("Starting digest pipeline")
@@ -445,7 +447,9 @@ class DigestPipeline:
             # Parallelize LLM API calls (the bottleneck). executor.map preserves
             # input order so zip(ranked, summaries) pairs correctly.
             with ThreadPoolExecutor(max_workers=workers) as pool:
-                summaries = list(pool.map(self.summarizer.summarize_article, ranked))
+                summaries = list(
+                    pool.map(telemetry.bind_context(self._summarize_article), ranked)
+                )
 
             # Process results sequentially to keep DB writes off worker threads.
             for art, result in zip(ranked, summaries):
@@ -537,6 +541,10 @@ class DigestPipeline:
             self.store.update_digest_stats(digest_id, json.dumps(self.stats))
         logger.info("Digest complete in %s", self.stats["processing_time"])
         return self.stats
+
+    @telemetry.observed("digest.article")
+    def _summarize_article(self, article: dict[str, Any]) -> Any:
+        return self.summarizer.summarize_article(article)
 
     def _filter_by_age(self, articles: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Drop articles whose published_at is older than max_article_age_hours.
@@ -846,6 +854,7 @@ class DigestPipeline:
 
         return sem_kept
 
+    @telemetry.observed("digest.post_run")
     def post_run(
         self,
         *,
@@ -975,6 +984,7 @@ class DigestPipeline:
                 lines.append(f"- {c['status']}: {c['url']}")
         return "\n".join(lines)
 
+    @telemetry.observed("digest.save", "tool")
     def _save_outputs(self) -> None:
         out_dir = resolve_output_path(self.config)
         if _APP_CSS.is_file():

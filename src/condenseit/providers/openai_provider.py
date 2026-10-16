@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 
+from condenseit import telemetry
 from condenseit.digest.format import build_digest_markdown
 from condenseit.providers.base import (
     ArticleSummary,
@@ -65,36 +66,40 @@ class OpenAISummarizer(SummarizerProvider):
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
-        resp: httpx.Response | None = None
-        with httpx.Client(timeout=120.0) as client:
-            for attempt in range(len(_RETRY_WAITS) + 1):
-                resp = client.post(url, json=payload, headers=headers)
-                if resp.status_code != 429:
-                    resp.raise_for_status()
-                    break
-                if attempt >= len(_RETRY_WAITS):
-                    resp.raise_for_status()
-                wait = int(resp.headers.get("Retry-After") or _RETRY_WAITS[attempt])
-                logger.warning(
-                    "OpenAI-compat 429 rate limit; retrying in %ds (attempt %d/%d)",
-                    wait,
-                    attempt + 1,
-                    len(_RETRY_WAITS),
-                )
-                time.sleep(wait)
+        with telemetry.model_call(self.model, messages, max_tokens) as observation:
+            resp: httpx.Response | None = None
+            with httpx.Client(timeout=120.0) as client:
+                for attempt in range(len(_RETRY_WAITS) + 1):
+                    resp = client.post(url, json=payload, headers=headers)
+                    if resp.status_code != 429:
+                        resp.raise_for_status()
+                        break
+                    if attempt >= len(_RETRY_WAITS):
+                        resp.raise_for_status()
+                    wait = int(resp.headers.get("Retry-After") or _RETRY_WAITS[attempt])
+                    logger.warning(
+                        "OpenAI-compat 429 rate limit; retrying in %ds (attempt %d/%d)",
+                        wait,
+                        attempt + 1,
+                        len(_RETRY_WAITS),
+                    )
+                    observation.retry(attempt + 1, resp.status_code)
+                    time.sleep(wait)
 
-        data = resp.json()  # type: ignore[union-attr]
-        choices = data.get("choices", [])
-        if not choices:
-            return ""
-        choice = choices[0]
-        if choice.get("finish_reason") == "length":
-            logger.warning(
-                "OpenAI-compat response truncated (finish_reason=length) for model=%s; "
-                "consider raising max_tokens",
-                self.model,
-            )
-        return str(choice["message"]["content"]).strip()
+            data = resp.json()  # type: ignore[union-attr]
+            observation.response(data)
+            choices = data.get("choices", [])
+            if not choices:
+                return ""
+            choice = choices[0]
+            if choice.get("finish_reason") == "length":
+                logger.warning(
+                    "OpenAI-compat response truncated (finish_reason=length) "
+                    "for model=%s; "
+                    "consider raising max_tokens",
+                    self.model,
+                )
+            return str(choice["message"]["content"]).strip()
 
     def summarize_article(
         self,

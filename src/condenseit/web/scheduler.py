@@ -175,7 +175,7 @@ async def scheduler_loop(
 
         logger.info("Scheduler: triggering digest run")
         try:
-            ok, msg = job_manager_start()
+            ok, msg = job_manager_start(execution_mode="scheduled")
             if not ok:
                 logger.warning("Scheduler: digest not started: %s", msg)
             else:
