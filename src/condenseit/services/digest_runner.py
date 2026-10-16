@@ -3,6 +3,7 @@
 import logging
 from typing import Any
 
+from condenseit import telemetry
 from condenseit.config import AppConfig, load_config
 from condenseit.pipeline.orchestrator import DigestPipeline
 from condenseit.services.ollama_lifecycle import OllamaLifecycle
@@ -11,6 +12,28 @@ logger = logging.getLogger(__name__)
 
 
 def execute_digest(
+    config_path: str | None = None,
+    *,
+    dry_run: bool = False,
+    skip_deploy: bool = False,
+    execution_mode: str = "manual",
+) -> dict[str, Any]:
+    """Run once, with a new telemetry session shared by all child operations."""
+    with telemetry.digest_run(execution_mode, dry_run) as observation:
+        result = _execute_digest(config_path, dry_run=dry_run, skip_deploy=skip_deploy)
+        telemetry.finish_run(
+            observation,
+            {
+                "digest_id": result["digest_id"],
+                "stats": {
+                    k: v for k, v in result["stats"].items() if k != "digest_items"
+                },
+            },
+        )
+        return result
+
+
+def _execute_digest(
     config_path: str | None = None,
     *,
     dry_run: bool = False,

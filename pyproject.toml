@@ -39,6 +39,10 @@ Repository = "https://github.com/wildlifechorus/condenseit"
 Issues = "https://github.com/wildlifechorus/condenseit/issues"
 
 [project.optional-dependencies]
+telemetry = [
+  "opentelemetry-sdk>=1.39,<2",
+  "opentelemetry-exporter-otlp-proto-http>=1.39,<2",
+]
 dev = [
   "mypy>=1.13",
   "pytest>=8.0",
