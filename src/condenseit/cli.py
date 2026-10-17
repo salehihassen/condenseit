@@ -47,7 +47,6 @@ def run(
             config,
             dry_run=dry_run,
             skip_deploy=no_deploy,
-            execution_mode="cli",
         )
         stats = result["stats"]
         post = result.get("post")

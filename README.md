@@ -363,8 +363,8 @@ cd frontend && npm ci && npm run build
 
 ## Optional telemetry
 
-CondenseIt can export digest traces, correlated events and usage metrics through
-an existing OpenTelemetry collector. See [telemetry setup](docs/telemetry.md) for
+CondenseIt can export digest and LLM request traces through an existing
+OpenTelemetry collector. See [telemetry setup](docs/telemetry.md) for
 opt-in installation, private runtime settings and Langfuse application filters.
 
 ## License
