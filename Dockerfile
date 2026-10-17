@@ -22,10 +22,7 @@ RUN apt-get update \
 COPY pyproject.toml README.md ./
 COPY src ./src
 
-ARG CONDENSEIT_EXTRAS=""
-RUN if [ -n "$CONDENSEIT_EXTRAS" ]; then \
-      pip install --no-cache-dir ".[${CONDENSEIT_EXTRAS}]"; \
-    else pip install --no-cache-dir .; fi
+RUN pip install --no-cache-dir ".[telemetry]"
 
 # Copy the built SPA into the static dist location that FastAPI serves
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
