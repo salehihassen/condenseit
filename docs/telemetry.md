@@ -50,7 +50,7 @@ execution available with a warning.
 
 ## Test
 
-Install `pip install '.[dev,telemetry]'` and run `python -m pytest`. The release
-workflow runs this suite before publishing images. For a live integration,
+Install `pip install '.[dev,telemetry]'` and run `python -m pytest`.
+For a live integration,
 run a digest and check records in the destination, including session grouping,
 model usage and errors.
