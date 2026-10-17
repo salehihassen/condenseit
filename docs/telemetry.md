@@ -6,10 +6,10 @@ Loki, Prometheus or another compatible backend.
 
 ## Connect a collector
 
-Install `pip install '.[telemetry]'`, or build the image with
-`docker build --build-arg CONDENSEIT_EXTRAS=telemetry -t condenseit:otel .`.
-Telemetry is disabled by default. Set these environment variables in the process
-that runs `condenseit run` or `condenseit serve`:
+Install `pip install '.[telemetry]'`, or use the Docker image, which includes
+the telemetry dependencies. Exporting is disabled by default. Set these
+environment variables in the process that runs `condenseit run` or
+`condenseit serve`:
 
 ```sh
 export CONDENSEIT_OTEL_ENABLED=true
