@@ -1,8 +1,8 @@
 # Optional LLM tracing
 
-Install `pip install '.[telemetry]'`, or use the normal Docker image, which
-includes the SDK. Exporting is **off by default**. To send traces to an
-OpenTelemetry collector using OTLP/HTTP protobuf:
+Normal Python and Docker installs include the telemetry dependencies.
+Exporting is **off by default**. To send traces to an OpenTelemetry collector
+using OTLP/HTTP protobuf:
 
 ```sh
 export CONDENSEIT_OTEL_ENABLED=true
@@ -35,4 +35,4 @@ Unset `CONDENSEIT_OTEL_ENABLED`, set it to `false`, or set
 invalid initialization settings leave inference available with a warning.
 Exports use bounded in-memory queues and timeouts; outages can lose spans.
 
-Test with `pip install '.[dev,telemetry]'` and `python -m pytest`.
+Test with `pip install '.[dev]'` and `python -m pytest`.

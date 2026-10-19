@@ -18,6 +18,8 @@ dependencies = [
   "markdown>=3.7",
   "numpy>=1.26",
   "ollama>=0.4",
+  "opentelemetry-sdk>=1.39,<2",
+  "opentelemetry-exporter-otlp-proto-http>=1.39,<2",
   "pydantic>=2.0",
   "pydantic-settings>=2.0",
   "python-dotenv>=1.2.2",
@@ -39,10 +41,6 @@ Repository = "https://github.com/wildlifechorus/condenseit"
 Issues = "https://github.com/wildlifechorus/condenseit/issues"
 
 [project.optional-dependencies]
-telemetry = [
-  "opentelemetry-sdk>=1.39,<2",
-  "opentelemetry-exporter-otlp-proto-http>=1.39,<2",
-]
 dev = [
   "mypy>=1.13",
   "pytest>=8.0",

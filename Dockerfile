@@ -22,7 +22,7 @@ RUN apt-get update \
 COPY pyproject.toml README.md ./
 COPY src ./src
 
-RUN pip install --no-cache-dir ".[telemetry]"
+RUN pip install --no-cache-dir .
 
 # Copy the built SPA into the static dist location that FastAPI serves
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
