@@ -176,7 +176,9 @@ class HackerNewsCollector:
             try:
                 comment = self._fetch_item(comment_id)
             except Exception:
-                logger.debug("HN comment fetch failed for %s", comment_id, exc_info=True)
+                logger.debug(
+                    "HN comment fetch failed for %s", comment_id, exc_info=True
+                )
                 continue
             if not comment or comment.get("deleted") or comment.get("dead"):
                 continue

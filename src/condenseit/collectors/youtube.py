@@ -190,7 +190,8 @@ class YouTubeCollector:
             ).strip()
             if not body:
                 logger.warning(
-                    "Skipping YouTube video %s: no transcript or substantive RSS description",
+                    "Skipping YouTube video %s: "
+                    "no transcript or substantive RSS description",
                     vid,
                 )
                 continue
