@@ -52,7 +52,9 @@ class HackerNewsDiscussionTest(unittest.TestCase):
                 52: {"by": "bob", "text": "<p>Try the new installer.</p>"},
             }
         )
-        collector._extract_content = lambda url: "Release details: faster builds. " * 100
+        collector._extract_content = lambda url: (
+            "Release details: faster builds. " * 100
+        )
 
         articles = collector._collect_feed(
             collector.sources[0],
@@ -65,7 +67,9 @@ class HackerNewsDiscussionTest(unittest.TestCase):
         self.assertEqual(article["url"], "https://news.ycombinator.com/item?id=42")
         self.assertEqual(article["discussion_url"], article["url"])
         self.assertEqual(article["original_url"], "https://example.com/release")
-        self.assertIn("Original article: https://example.com/release", article["content"])
+        self.assertIn(
+            "Original article: https://example.com/release", article["content"]
+        )
         self.assertIn("Release details: faster builds", article["content"])
         self.assertIn("alice: It works, but setup is slow.", article["content"])
         self.assertIn("bob: Try the new installer.", article["content"])
@@ -106,7 +110,9 @@ class HackerNewsDiscussionTest(unittest.TestCase):
                 "content": "Release details and discussion",
                 "source": "Hacker News (top)",
                 "category": "General",
-                "content_hash": ContentStore.content_hash("Release details and discussion"),
+                "content_hash": ContentStore.content_hash(
+                    "Release details and discussion"
+                ),
                 "published_at": "2026-09-28T10:00:00+00:00",
                 "collected_at": "2026-09-28T10:01:00+00:00",
             }
@@ -140,8 +146,16 @@ class HackerNewsDiscussionTest(unittest.TestCase):
                 "created_at": "2026-09-28T12:00:00+00:00",
                 "markdown": "",
                 "stats_json": json.dumps(
-                    {"digest_items": [{"url": original, "title": "A useful release",
-                                        "source": "Hacker News (top)", "summary": "Summary"}]}
+                    {
+                        "digest_items": [
+                            {
+                                "url": original,
+                                "title": "A useful release",
+                                "source": "Hacker News (top)",
+                                "summary": "Summary",
+                            }
+                        ]
+                    }
                 ),
             }
             item = _build_digest_detail(saved_digest, store)["items"][0]
