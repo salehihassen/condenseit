@@ -3,6 +3,7 @@
 import logging
 from typing import Any
 
+from condenseit import telemetry
 from condenseit.config import AppConfig, load_config
 from condenseit.pipeline.orchestrator import DigestPipeline
 from condenseit.services.ollama_lifecycle import OllamaLifecycle
@@ -10,6 +11,7 @@ from condenseit.services.ollama_lifecycle import OllamaLifecycle
 logger = logging.getLogger(__name__)
 
 
+@telemetry.digest_run
 def execute_digest(
     config_path: str | None = None,
     *,

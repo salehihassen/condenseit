@@ -13,6 +13,7 @@ from typing import Any, Self
 import markdown
 import numpy as np
 
+from condenseit import telemetry
 from condenseit.collectors.github_releases import GitHubReleasesCollector
 from condenseit.collectors.google_news import GoogleNewsCollector
 from condenseit.collectors.hackernews import HackerNewsCollector
@@ -445,7 +446,12 @@ class DigestPipeline:
             # Parallelize LLM API calls (the bottleneck). executor.map preserves
             # input order so zip(ranked, summaries) pairs correctly.
             with ThreadPoolExecutor(max_workers=workers) as pool:
-                summaries = list(pool.map(self.summarizer.summarize_article, ranked))
+                summaries = list(
+                    pool.map(
+                        telemetry.bind_context(self.summarizer.summarize_article),
+                        ranked,
+                    )
+                )
 
             # Process results sequentially to keep DB writes off worker threads.
             for art, result in zip(ranked, summaries):

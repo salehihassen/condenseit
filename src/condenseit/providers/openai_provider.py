@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 
+from condenseit import telemetry
 from condenseit.digest.format import build_digest_markdown
 from condenseit.providers.base import (
     ArticleSummary,
@@ -49,6 +50,7 @@ class OpenAISummarizer(SummarizerProvider):
     def model_name(self) -> str:
         return self.model
 
+    @telemetry.model_call
     def _chat(
         self,
         messages: list[dict[str, str]],
@@ -84,6 +86,7 @@ class OpenAISummarizer(SummarizerProvider):
                 time.sleep(wait)
 
         data = resp.json()  # type: ignore[union-attr]
+        telemetry.record_response(data)
         choices = data.get("choices", [])
         if not choices:
             return ""
